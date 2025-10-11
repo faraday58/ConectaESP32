@@ -11,14 +11,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.mexiti.conectaesp32.ui.Screens.BluetoothEsp32Screen
 import com.mexiti.conectaesp32.ui.theme.ConectaESP32Theme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             ConectaESP32Theme {
+
+                BluetoothEsp32Screen()
              /*   Scaffold(modifier = Modifier.fillMaxSize()) {
                     innerPadding ->
                     Greeting(
