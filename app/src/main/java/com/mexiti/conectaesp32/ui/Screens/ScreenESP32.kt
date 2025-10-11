@@ -4,25 +4,57 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mexiti.conectaesp32.reporistorio.ConnectionState
 import com.mexiti.conectaesp32.viewmodel.BluetoothViewModel
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun  BluetoothEsp32Screen(BluetoothVM: BluetoothViewModel = viewModel()){
+fun  BluetoothEsp32Screen(bluetoothVM: BluetoothViewModel = viewModel()){
     val context = LocalContext.current
-    val connectionState by BluetoothVM.connectionState.collectAsState()
-    val recivedDataLog by BluetoothVM.receivedDataLog.collectAsState()
+    val connectionState by bluetoothVM.connectionState.collectAsState()
+    val recivedDataLog by bluetoothVM.receivedDataLog.collectAsState()
 
     var deviceAddressInput by remember { mutableStateOf(TextFieldValue("XX:XX:XX:XX:XX:XX")) }
     var messageToSendInput by remember { mutableStateOf(TextFieldValue("")) }
@@ -32,6 +64,166 @@ fun  BluetoothEsp32Screen(BluetoothVM: BluetoothViewModel = viewModel()){
 
     // --- Gestión de Permisos ---
     var hasPermissions by remember { mutableStateOf(hasRequiredBluetoothPermissions(context)) }
+    val permissionsToRequest = if ( Build.VERSION.SDK_INT  >= Build.VERSION_CODES.S) {
+        arrayOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    }else{
+            arrayOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN
+            )
+    }
+
+    val multiplePermissionsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        hasPermissions = allGranted
+
+        if (!allGranted) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Ser requieren permisos de Bluetooth para usar esta función.",
+                    duration = SnackbarDuration.Long
+                )
+            }
+            Log.e("BluetoothScreen","Permisos denegados")
+        }else {
+            Log.d("BluetoothScreen","Permisos concedidos")
+        }
+    }
+
+    LaunchedEffect(key1 = Unit) { // Solicitar permisos al inicio si no los tiene
+        if(!hasPermissions){
+            multiplePermissionsLauncher.launch(permissionsToRequest)
+        }
+    }
+    // --- Fin Gestión de Permisos ---
+
+    // Scroll al final del log cuando llegan nuevos mensajes
+    LaunchedEffect(recivedDataLog.size) {
+        if(recivedDataLog.isNotEmpty()){
+            listState.animateScrollToItem(recivedDataLog.size - 1  )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("ESP32 Bluetooth MVVM") }
+            )
+        }
+    )
+    { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+
+        ) {
+            Text( bluetoothVM.adapterState,
+                style = MaterialTheme.typography.titleMedium)
+
+            if(bluetoothVM.adapterState != "Bluetooth activado" && bluetoothVM.adapterState != "No soporta Bluetooth"  ){
+                Button(onClick = {
+                    /* TODO: Implementar solicitud para activar BT */
+                }) {
+                    Text("Activar Bluetooth")
+                }
+            }
+
+            OutlinedTextField(
+                value = deviceAddressInput,
+                onValueChange = {deviceAddressInput = it },
+                label = { Text("Dirección MAC del ESP32") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Row (
+                modifier  = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ){
+                Button(
+                    onClick = {
+                        if(!hasPermissions){
+                            multiplePermissionsLauncher.launch(permissionsToRequest)
+                        }else {
+                            bluetoothVM.connect(deviceAddressInput.text)
+                        }
+                    },
+                    enabled = connectionState !is ConnectionState.Connecting &&
+                            connectionState !is ConnectionState.Connected
+                ) {
+                    Text("Conectar")
+                }
+                Button(
+                    onClick = { bluetoothVM.disconnect() },
+                    enabled = connectionState is ConnectionState.Connecting ||
+                    connectionState is ConnectionState.Connected
+
+                ) {
+                    Text("Desconectar")
+                }
+            }
+            when(val state = connectionState){
+                is ConnectionState.Idle -> Text("Estado: Inactivo")
+                is ConnectionState.Connecting ->Text("Estado> Conectado a ${state.deviceName}...")
+                is ConnectionState.Connected -> Text("Estado> Conectado a ${state.deviceName}", color = Color(0xFF006400))
+                is ConnectionState.Error -> Text("Estado: Error - ${state.message}", color = MaterialTheme.colorScheme.error)
+                is ConnectionState.Disconnected -> Text("Estado: Desconectado")
+            }
+
+            OutlinedTextField(
+                value = messageToSendInput,
+                onValueChange = { messageToSendInput = it },
+                label = { Text("Mensaje a enviar") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = connectionState is ConnectionState.Connected
+            )
+            Button(
+                onClick = {
+                    bluetoothVM.sendMessage(messageToSendInput.text)
+                    messageToSendInput = TextFieldValue("")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = connectionState is ConnectionState.Connected && messageToSendInput.text.isNotBlank()
+            ) {
+                Text("Enviar")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Log de Comunicación:", style = MaterialTheme.typography.titleMedium)
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(8.dp)
+            ) {
+                items(recivedDataLog){ logEntry ->
+                    Text(logEntry, style = MaterialTheme.typography.bodySmall)
+                }
+                if(recivedDataLog.isNotEmpty())
+                {
+                    item { Text("No hay mensajes", style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+
+        }
+
+
+
+
+    }
+
+
 }
 
 fun hasRequiredBluetoothPermissions(context: Context): Boolean {
