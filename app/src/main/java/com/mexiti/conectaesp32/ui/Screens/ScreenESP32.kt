@@ -51,12 +51,16 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun  BluetoothEsp32Screen(bluetoothVM: BluetoothViewModel = viewModel()){
+fun  BluetoothEsp32Screen(
+    bluetoothVM: BluetoothViewModel = viewModel(),
+    modifier: Modifier = Modifier,
+    preSelectedAddress: TextFieldValue = TextFieldValue("XX:XX:XX:XX:XX:XX")
+    ){
     val context = LocalContext.current
     val connectionState by bluetoothVM.connectionState.collectAsState()
     val recivedDataLog by bluetoothVM.receivedDataLog.collectAsState()
 
-    var deviceAddressInput by remember { mutableStateOf(TextFieldValue("XX:XX:XX:XX:XX:XX")) }
+    var deviceAddressInput by remember { mutableStateOf(preSelectedAddress) }
     var messageToSendInput by remember { mutableStateOf(TextFieldValue("")) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
