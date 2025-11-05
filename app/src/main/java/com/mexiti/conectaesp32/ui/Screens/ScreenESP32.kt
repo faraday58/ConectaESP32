@@ -45,15 +45,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mexiti.conectaesp32.reporistorio.ConnectionState
+import com.mexiti.conectaesp32.repositorio.ConnectionState
 import com.mexiti.conectaesp32.viewmodel.BluetoothViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun  BluetoothEsp32Screen(
-    bluetoothVM: BluetoothViewModel = viewModel(),
     modifier: Modifier = Modifier,
+    bluetoothVM: BluetoothViewModel = viewModel(),
     preSelectedAddress: TextFieldValue = TextFieldValue("XX:XX:XX:XX:XX:XX")
     ){
     val context = LocalContext.current
@@ -123,7 +123,7 @@ fun  BluetoothEsp32Screen(
     )
     { paddingValues ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),

@@ -55,9 +55,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mexiti.conectaesp32.reporistorio.BluetoothDeviceInfo
+import com.mexiti.conectaesp32.repositorio.BluetoothDeviceInfo
 import com.mexiti.conectaesp32.viewmodel.PairedDevicesViewModel
 import kotlinx.coroutines.launch
 

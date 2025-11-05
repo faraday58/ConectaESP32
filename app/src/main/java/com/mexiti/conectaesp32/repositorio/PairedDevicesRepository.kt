@@ -1,4 +1,4 @@
-package com.mexiti.conectaesp32.reporistorio
+package com.mexiti.conectaesp32.repositorio
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter

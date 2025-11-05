@@ -5,8 +5,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mexiti.conectaesp32.reporistorio.BluetoothDeviceInfo
-import com.mexiti.conectaesp32.reporistorio.PairedDevicesRepository
+import com.mexiti.conectaesp32.repositorio.BluetoothDeviceInfo
+import com.mexiti.conectaesp32.repositorio.PairedDevicesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
